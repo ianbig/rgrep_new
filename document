@@ -1,0 +1,95 @@
+want to do
+1. color desire pattern
+    sol: use strstr to find pattern, then print string before pattern
+    after that use strstr again to find string if it return NULL print the whole sentence
+2. develope spec for correctness
+3. work on test multiple field (-m) *****
+4. boolean input has to have ability to remove whitespace
+5. if unable to do print different color then output how many match if stringHandler
+6. && will make program step into infinte loop
+7. stringHandler output number
+8. replace strstr with other string matching algorithm *** not gonna do that
+
+10/29
+1. make ettoday.rec to mutiple small files --> test matching on different files
+2. use offset to label record( not effective enough !!!! )
+
+10/30
+1. query only allow one parameter
+2. succeed split file into 6 seperate file
+
+11/1
+1. finish outline of parameter process
+2. working on option process ( after rb size bigger than 3 )
+
+11/3
+1. working on simple string test
+2. stringHandler finish
+    a. no parameter
+    b. -l
+
+11/ *******
+1. stringHandelr process
+    a. no para
+    b. -l
+    c. -rb
+    d. -m
+    e. -i
+2. split file still < source file -- find reason
+3. move onto working on boolean
+
+11/6
+1. find out print color( not implement yet)
+2. boolean not know how to present relationship between words ( do print color )
+    e.g  kobe && john || apple && David = (kobe && john) || (john && David)
+    e.g. kobe || john && david && apple && hippos || kobe || David
+    sol: use regular exp to lookahead maybe possible
+
+11/8
+1. use re to solve boolean
+    a. get stuck at lookahead
+
+11/9
+1. use pcre to finish the boolean
+2. print out match word = whole sentence
+
+11/11
+1. bool w/ no parameter almost finish
+    a. bug: apple|kobe => kobe will have koeb*&*&(
+
+11/12 ******
+1. bug resolve
+2. boolean finish
+    a. allow bool: ! & |
+    b. show match word for each line
+3. start to work on field
+    a. match: full and partially
+    b. # of field: multiple and single
+    c. progress: finish DS construct
+
+11/13
+1. fieldHandler has the possible worse than N^2 (when K>N^2) k = number of query
+2. field handler
+    a. still remain parameter rb; l; i
+
+11/14 *****
+1. finish fieldHandler
+    a. allow multi-field search
+    b. only complete match search( since partially match can be done by -m -simple)
+    c. statistic result of overall match
+2. start to work on multi-pattern
+    a. learn string match alogrithm
+        1. brute-force
+        2. Kruth Morris Pratt
+        3. Boyer Moore
+        4. AHo Corasiclc: multi-pattern
+
+11/15~11/23
+1. kmp learned
+2. bm learned
+3. wu learning
+12/1
+1. muti-pattern algorith, finsih
+    testing: grep not countable
+    1. 大奶:1300+法人:16367 = 17667
+    2. 美人:17519+法人:16367 = 33886
