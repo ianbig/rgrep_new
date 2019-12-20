@@ -6,6 +6,7 @@ int main( int argc, char **argv ) {
     char **file = NULL;
     size_t offset = -1;
     size_t fileNum  = -1;
+    int *recorded = (int*)malloc(sizeof(int));
 
     /*
     FILE *fp = fopen("ettoday.rec","r+");
@@ -13,6 +14,9 @@ int main( int argc, char **argv ) {
     fclose(fp);
     return 0;
      */
+
+
+
 
     /*=========== help message ============*/
     if(argc<4) {
@@ -27,6 +31,8 @@ int main( int argc, char **argv ) {
     queryProcess( argc, argv, offset, &qu);
     file = fileProcess( argc, argv, qu.offsetFile);
     fileNum = argc-qu.offsetFile;
+
+
 
     if(par.rb!= NULL && strcmp( par.rb, "@")== 0  ) {
         fprintf( stderr, "ERROR: @ is header implication, cannot use as begin field");
