@@ -4,9 +4,10 @@ int main( int argc, char **argv ) {
     struct paraHandler par;
     struct queryHandler qu;
     char **file = NULL;
+    clock_t start = clock();
     size_t offset = -1;
     size_t fileNum  = -1;
-    int *recorded = (int*)malloc(sizeof(int));
+    delFile("./tmp");
 
     /*
     FILE *fp = fopen("ettoday.rec","r+");
@@ -61,6 +62,11 @@ int main( int argc, char **argv ) {
     free(par.m);
     free(qu.pattern);
     free(file);
+
+    clock_t end = clock();
+    double runTime = (double)(end - start) /CLOCKS_PER_SEC;
+    printf("Time elapsed: %.5f\n", runTime);
+
 
     return 0;
 }

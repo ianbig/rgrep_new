@@ -43,7 +43,6 @@ size_t readFile( FILE *fp, size_t expectRead, char *fileName) {
     int lineCheck = 0;
     FILE *op = fopen(fileName,"a+");
 
-
     while ((lineCheck = getline(&line,&len,fp))!=-1) {
 
         if(strncmp( line, check, sizeof(check)-1) == 0)
@@ -110,6 +109,7 @@ void paraInit(struct paraHandler *par) {
     par->n = false;
     par->m = NULL;
     par->rb = NULL;
+    par->recordMax = 100;
 }
 
 size_t optionProcess( int argc, char **argv, struct paraHandler *par) {
@@ -118,6 +118,7 @@ size_t optionProcess( int argc, char **argv, struct paraHandler *par) {
     int size = -1;
     int rbFlag = OFF;
     int mFlag = OFF;
+    int gFlag = OFF;
 
     for( iter = 1; iter<argc; iter++) {
         size = strlen(argv[iter]);
@@ -160,10 +161,10 @@ size_t optionProcess( int argc, char **argv, struct paraHandler *par) {
         else if( strcmp(argv[index], "-g") ==0 ) {
             int amount = 0;
             size_t digit = strlen(argv[index]);
-            for(int i = 0; i < digit; i++) {
-                amount += atoi(argv[index][i]) * pow(10, i);
-            }
+            amount = atoi(argv[index+1]);
             par->recordMax = amount;
+            gFlag = ON;
+
         }
 
         else {
@@ -175,6 +176,11 @@ size_t optionProcess( int argc, char **argv, struct paraHandler *par) {
 
             else if(mFlag == ON) {
                 mFlag = OFF;
+                continue;
+            }
+
+            else if(gFlag == ON) {
+                gFlag = OFF;
                 continue;
             }
 
@@ -248,7 +254,7 @@ int stringHandler( struct paraHandler *par, char **file, int fileNum, char *desi
     int a = -2;
     int recordCheck = 0, outFlag = OFF;
     unsigned int matched = 0;
-    int fileCount = 0, recordCount = 0, preCount;
+    int fileCount = 1, recordCount = 0, preCount, rcount = 0;
     struct Record *record = (struct Record*)malloc(sizeof(struct Record) * 1);
 
     /*============ open file ==============*/
@@ -270,18 +276,20 @@ int stringHandler( struct paraHandler *par, char **file, int fileNum, char *desi
            if(recordCheck == DONE && outFlag == OFF)
            {
                bodyFlag = OFF;
-               outFlag = OFF;
                emptyTmp(record);
+               recordCheck = 0;
            }
-           if(recordCheck == DONE && outFlag == ON) {
+           if(recordCheck == DONE && outFlag == ON ) {
                preCount = fileCount;
-               fileCount = output(record, recordCount, par->recordMax, fileCount); // add fileCount in function
+               if(par->n == false) fileCount = output(record, recordCount, par->recordMax, fileCount, file[fileIndex], par); // add fileCount in function
                if(preCount != fileCount) {
                    recordCount = 0;
                }
                recordCount++;
+               rcount++;
                outFlag = OFF;
                bodyFlag = OFF;
+               recordCheck = 0;
                continue;
            }
            // section for handling rb
@@ -308,20 +316,20 @@ int stringHandler( struct paraHandler *par, char **file, int fileNum, char *desi
            ptr = mystrstr(buffer,desire, par->i);
            while(ptr!=NULL) {
                matched++;
-               if(par->l == true && par->n == false) a = fprintf( stderr, "%s:\t%s", file[fileIndex], buffer);
-               else if(par->n == false) outFlag = ON;
+               outFlag = ON;
                ptr += strlen(desire);
                ptr = mystrstr( ptr, desire, par->i);
            }
            //free area
-           free(buffer);
-           buffer = NULL;
        }
+        free(buffer);
+        buffer = NULL;
 
        fclose(fp[fileIndex]);
     }
     if(par->n == true) {
         printf("%s: %d\n", desire, matched);
+        printf("matched reocrd: %d\n", rcount);
     }
 
     /*========== free area =============*/
@@ -582,10 +590,14 @@ int multiHandler(struct paraHandler *par, char **file, int fileNum, struct query
     int foundNum = 0;
     size_t len = 0;
     FILE *fp = NULL;
+    int recordCheck = 0, outFlag = OFF;
+    int fileCount = 1, recordCount = 0, preCount, rcount = 0;
+    struct Record *record = (struct Record*)malloc(sizeof(struct Record) * 1);
+    int bodyFlag = OFF;
 
     /* ======== preprocess pattern ======= */
     while(ptr!=NULL) {
-        pattern[patternSize] = (char*)calloc( strlen(ptr)+3, sizeof(char));
+        pattern[patternSize] = (char*)calloc( strlen(ptr)+10, sizeof(char));
         memmove( pattern[patternSize], ptr, strlen(ptr));
         ptr = strtok( NULL, ",");
         patternSize++;
@@ -599,6 +611,30 @@ int multiHandler(struct paraHandler *par, char **file, int fileNum, struct query
             exit(EXIT_FAILURE);
         }
         while(getline( &line, &len, fp) != -1) {
+            // store into temperary
+            if(recordCheck == ON) {
+                bodyFlag = ON;
+            }
+            recordCheck = storeRecord(line, record, bodyFlag);
+            if(recordCheck == DONE && outFlag == OFF)
+            {
+                bodyFlag = OFF;
+                emptyTmp(record);
+                recordCheck = 0;
+            }
+            if(recordCheck == DONE && outFlag == ON ) {
+                preCount = fileCount;
+                if(par->n == false) fileCount = output(record, recordCount, par->recordMax, fileCount, file[i], par); // add fileCount in function
+                if(preCount != fileCount) {
+                    recordCount = 0;
+                }
+                recordCount++;
+                rcount++;
+                outFlag = OFF;
+                bodyFlag = OFF;
+                recordCheck = 0;
+                continue;
+            }
             // process rb
             if( par-> rb != NULL ) {
                 if( rbFlag == OFF && strncmp( par->rb, line, strlen(par->rb)) == 0 ) rbFlag = ON;
@@ -621,31 +657,34 @@ int multiHandler(struct paraHandler *par, char **file, int fileNum, struct query
                 }
             }
             foundNum = strmStr( line, pattern, found, patternSize);
-            if(foundNum > 0 && par->l == false && par->n == false) printf("%s\n",line);
-            else if(foundNum > 0 && par->l == true && par->n == false) printf("%s: %s\n", file[i], line);
+            if(foundNum > 0 ) outFlag = ON;
             free(line);
             line = NULL;
         }
+
+
         fclose(fp);
     }
-
+    fprintf(stderr,"finish searching\n");
     /* ======= print result ====== */
     if( par->n == true) {
         for( int i = 0; i<patternSize; i++) {
             hv = 5381;
             size = strlen(pattern[i]);
-            for( int j = 0; j< size; j++) {
-                hv = ((hv<<5)+hv)+pattern[i][j];
+            for (int j = 0; j < size; j++) {
+                hv = ((hv << 5) + hv) + pattern[i][j];
             }
             hv = hv % HASH_SIZE;
-            printf( "%s: %d\n", pattern[i], found[hv]);
+            printf("%s: %d\n", pattern[i], found[hv]);
         }
+        printf("matched reocrd: %d\n", rcount);
     }
 
     /* ======= free area ======= */
     for( int i = 0; i<patternSize; i++) {
         free(pattern[i]);
     }
+    free(record);
     return 1;
 }
 
@@ -661,7 +700,6 @@ int strmStr(char *source, char **pattern, unsigned int *found, int patternSize) 
     struct Hash *ptr, *nptr;
 
     char *tmp = NULL, *end = NULL, *cptr = NULL;
-
 
 
     /* ====== init =======*/
@@ -694,7 +732,7 @@ int strmStr(char *source, char **pattern, unsigned int *found, int patternSize) 
             if(shift<shiftTable[hv]) shiftTable[hv] = shift;
             if(shift == 0) {
                 ptr = &(hashTable[hv]);
-                nptr = (struct Hash*)malloc(sizeof(struct Hash));
+                nptr = (struct Hash*)malloc(sizeof(struct Hash) * 1);
                 memmove( nptr->str, pattern[i], strlen(pattern[i]));
                 nptr->next = NULL;
                 while(ptr->next!=NULL) ptr = ptr->next;
@@ -743,7 +781,7 @@ int strmStr(char *source, char **pattern, unsigned int *found, int patternSize) 
         ptr = &(hashTable[i]);
         if(ptr->next == NULL) continue;
         else ptr = ptr->next;
-        while (ptr->next != NULL)
+        while (ptr != NULL)
         {
             nptr = ptr->next;
             free(ptr);
@@ -757,15 +795,16 @@ int strmStr(char *source, char **pattern, unsigned int *found, int patternSize) 
 }
 
 
-int output(struct Record *record, int recordCount, int recordMax, int fileCount) {
+int output(struct Record *record, int recordCount, int recordMax, int fileCount, char *filename, struct paraHandler *par) {
 
     char fileName[50] = {0};
     FILE *op = NULL;
-    if(recordCount > recordMax) {
+    if(recordCount >= recordMax) {
         fileCount++;
     }
     sprintf(fileName, "./tmp/tmp_%d.txt", fileCount);
     op = fopen(fileName, "a+");
+    if(par->l == true) fwrite(fileName, sizeof(char), strlen(fileName), op);
     // section for output
     fwrite(record->rec, sizeof(char), strlen(record->rec), op);
     fwrite(record->url, sizeof(char), strlen(record->url), op);
@@ -787,6 +826,7 @@ int output(struct Record *record, int recordCount, int recordMax, int fileCount)
     fwrite(record->time, sizeof(char), strlen(record->time), op);
     fwrite(record->body, sizeof(char), strlen(record->body), op);
     emptyTmp(record);
+    fclose(op);
     return fileCount;
 }
 
@@ -876,14 +916,17 @@ int storeRecord(char *buffer, struct Record *record, int bodyFlag) {
         memmove(record->ip, buffer, strlen(buffer));
     }
     else if(!strncmp(buffer, "@body", strlen("@body")) ){
-        record->body = (char*)malloc(sizeof(char) * strlen(buffer));
+        record->body = (char*)malloc(sizeof(char) * ( strlen(buffer) + 3 ));
         memmove(record->body, buffer, strlen(buffer));
         return ON;
     }
     // deal w/ rest of body
     else if(bodyFlag == ON) {
-        record->body = realloc( record->body, strlen(record->body)+strlen(buffer));
+        char *ptr = record->body;
+        record->body = (char*)calloc( (strlen(ptr) + strlen(buffer) + 10), sizeof(char));
+        memmove(record->body, ptr, strlen(ptr));
         strcat(record->body, buffer);
+        free(ptr);
         return ON;
     }
 
@@ -901,6 +944,7 @@ int storeRecord(char *buffer, struct Record *record, int bodyFlag) {
 }
 
 void emptyTmp(struct Record *record) {
+
     memset(record->rec,'\0',strlen(record->rec));
     memset(record->url,'\0',strlen(record->url));
     memset(record->mainTex,'\0',strlen(record->mainTex));
@@ -919,7 +963,22 @@ void emptyTmp(struct Record *record) {
     memset(record->ip,'\0',strlen(record->ip));
     memset(record->botVert,'\0',strlen(record-> botVert));
     memset(record->time,'\0',strlen(record->time));
-    fprintf(stderr, "%s\n", record->body);
     free(record->body);
     record->body = NULL;
+}
+
+bool delFile(const char *dir) {
+    DIR *drip = opendir(dir);
+    struct dirent *entry;
+    char dirName[100]  ={0};
+    int filecount = 0;
+
+    while( (entry = readdir(drip) ) !=  NULL) {
+        if(entry->d_type == DT_REG) {
+            sprintf(dirName,"./tmp/%s",entry->d_name);
+            filecount = remove(dirName);
+        }
+    }
+    closedir(drip);
+    return true;
 }

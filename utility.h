@@ -8,19 +8,20 @@
 #define ON 1
 #define OFF 0
 #define BOOL_SIZE 100
-#define MAX_PAT 1000
+#define MAX_PAT 100
 #define STRING_MAX 1000
 #define HASH_SIZE 256
 #define DONE 3
 #define STORAGE 500
 #define W_SIZE 1000
-#define AMOUNT_OF_RECORD 19
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
 #include <math.h>
+#include <dirent.h>
+#include <time.h>
 
 struct paraHandler {
     bool i; //incenstive
@@ -84,7 +85,7 @@ void check(char *fp, int *recorded);
 void splitFile( FILE* fp);
 size_t readFile( FILE* fp, size_t expectRead, char *fileName);
 void help();
-int output(struct Record *record, int recordCount, int recordMax, int fileCount);
+int output(struct Record *record, int recordCount, int recordMax, int fileCount, char *filename, struct paraHandler *par);
 void paraInit(struct paraHandler *par);
 size_t optionProcess( int argc, char **argv, struct paraHandler *par); // return query places
 int queryProcess( int argc, char **argv, size_t offset, struct queryHandler *qu);
@@ -100,4 +101,5 @@ int multiHandler(struct paraHandler *par, char **file, int fileNum, struct query
 int strmStr( char *source, char **pattern, unsigned int *found, int patternSize);
 int storeRecord(char *buffer, struct Record *record, int bodyFlag);
 void emptyTmp(struct Record *record);
+bool delFile(const char *dir);
 #endif //PROJECT2_UTILITY_H
